@@ -12,8 +12,13 @@ def image_to_canny(image, kernel, minThresh, maxThresh):
   return canny
 
 def region_of_interest(image):
-  polygons = np.array([[(200, 650), (1200, 650), (650, 425)]])
-  negPolygons = np.array([[(375, 650), (975, 650), (650, 450)]])
+  '''1080x720'''
+  # polygons = np.array([[(200, 650), (1200, 650), (650, 425)]])
+  # negPolygons = np.array([[(375, 650), (975, 650), (650, 450)]])
+  '''1080x720 challenge2'''
+  polygons = np.array([[(250, 500), (900, 500), (625, 325)]])
+  negPolygons = np.array([[(375, 500), (775, 500), (625, 350)]])
+  '''960x540'''
   # polygons = np.array([[(100, 530), (900, 530), (480, 300)]])
   # negPolygons = np.array([[(200, 530), (800, 530), (480, 330)]])
   mask = np.zeros_like(image)
@@ -25,7 +30,7 @@ def region_of_interest(image):
 def make_coordinates(image, line_parameters):
   slope, intercept = line_parameters
   y1 = image.shape[0]
-  y2 = int(y1*(3/5.0))
+  y2 = int(y1*(2.5/5.0))
   x1 = int((y1-intercept)/slope)
   x2 = int((y2-intercept)/slope)
   return np.array([x1, y1, x2, y2])
@@ -47,8 +52,6 @@ def average_slope_intercept(image, lines):
     else:
       right_fit.append((slope, intercept))
 
-  # print(sum(last_left_fit_avg-np.average(left_fit, axis=0))>100 or sum(last_left_fit_avg-np.average(left_fit, axis=0))<-100)
-
   if len(left_fit) > 0:
     left_fit_average = np.average(left_fit, axis=0)
     last_left_fit_avg = left_fit_average
@@ -63,6 +66,9 @@ def average_slope_intercept(image, lines):
     # print("No right line found! Using last")
     right_fit_average = last_right_fit_avg
 
+  if left_fit_average is None or right_fit_average is None:
+    return None
+
   return np.array([make_coordinates(image, left_fit_average), make_coordinates(image, right_fit_average)])
 
 def display_lines(image, lines):
@@ -73,7 +79,7 @@ def display_lines(image, lines):
       cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 0), 10)
   return line_image
 
-cap = cv2.VideoCapture("challenge.mp4")
+cap = cv2.VideoCapture("challenge2.mp4")
 last_left_fit_avg = None
 last_right_fit_avg = None
 last_averaged_lines = None
@@ -98,8 +104,13 @@ while(cap.isOpened()):
   averaged_lines = None
   if hough_lines is not None:
     averaged_lines = average_slope_intercept(frame, hough_lines)
+    if averaged_lines is None:
+      continue
   else:
-    averaged_lines = np.array([make_coordinates(frame, last_left_fit_avg), make_coordinates(frame, last_right_fit_avg)])
+    if last_left_fit_avg is None or last_right_fit_avg is None:
+      continue
+    else:
+      averaged_lines = np.array([make_coordinates(frame, last_left_fit_avg), make_coordinates(frame, last_right_fit_avg)])
   
   '''Not using new averaged_lines that differ a lot from previous lines'''
   if last_averaged_lines is not None:
